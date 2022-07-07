@@ -15,12 +15,13 @@ If the versions of Dronemeld or TILER2 (or possibly any other mods) are differen
 Whenever a duplicate drone of any one type is purchased, Dronemeld will prevent it from spawning. Instead, the existing drone of that type will gain significant boosts to base health, attack speed, attack damage, and cooldown reduction. This cuts down on some lag and a lot of visual/audial clutter in long, drone-heavy games.
 
 Includes config options for (default value):
-	- How many duplicate drones to allow (1).
-	- Whether to count all drones per team, or individually per player (per player).
-	- What order to run upgrades in if more than 1 drone per type is allowed, between round-robin, all-at-once, first-only, or random (round-robin).
-	- Which drones to affect (Gunner, Missile, Flame, Healing, TC-280 Prototype, Turret).
-	- Individual stat boosts per stack for health, damage, attack speed, and CDR (+1x, +0.6x, +0.6x, +0.6x).
-	- Whether, and how strongly, to display a clientside model size increase per stack (+0.25x).
+
+- How many duplicate drones to allow (1).
+- Whether to count all drones per team, or individually per player (per player).
+- What order to run upgrades in if more than 1 drone per type is allowed, between round-robin, all-at-once, first-only, or random (round-robin).
+- Which drones to affect (Gunner, Missile, Flame, Healing, TC-280 Prototype, Turret).
+- Individual stat boosts per stack for health, damage, attack speed, and CDR (+1x, +0.6x, +0.6x, +0.6x).
+- Whether, and how strongly, to display a clientside model size increase per stack (+0.25x).
 
 ## Issues/TODO
 
