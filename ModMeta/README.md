@@ -12,7 +12,7 @@ If the versions of Dronemeld or TILER2 (or possibly any other mods) are differen
 
 ## Description
 
-Whenever a duplicate drone of any one type is purchased, Dronemeld will prevent it from spawning. Instead, the existing drone of that type will gain significant boosts to base health, attack speed, attack damage, and cooldown reduction. This cuts down on some lag and a lot of visual/audible clutter in long, drone-heavy games.
+Whenever a duplicate drone of any one type is purchased, Dronemeld will prevent it from spawning. Instead, the existing drone of that type will gain significant boosts to base health, attack speed, attack damage, and cooldown reduction. This cuts down on some lag and a lot of visual/audial clutter in long, drone-heavy games.
 
 Includes config options for (default value):
 	- How many duplicate drones to allow (1).
@@ -33,4 +33,8 @@ The 5 latest updates are listed below. For a full changelog, see: https://github
 
 **1.0.0**
 
-- Initial version. TODO: add summary of initial version content here once implemented.
+- Initial version.
+	- Causes duplicate drone purchases to increase existing drones' stats instead of spawning a new one.
+	- Optionally also increases model size.
+	- Includes config for quantity before counting as duplicates, and upgrade order if this is > 1.
+	- Includes option for counting all drones per team instead of per player.
