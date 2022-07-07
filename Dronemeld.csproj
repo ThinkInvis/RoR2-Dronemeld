@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+	<LangVersion>9</LangVersion>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <PackageReference Include="BepInEx.Analyzers" Version="1.0.*">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="BepInEx.Core" Version="[5.4.19]" />
+    <PackageReference Include="MMHOOK.RoR2" Version="2022.4.19" />
+    <PackageReference Include="R2API" Version="4.4.1" />
+    <PackageReference Include="RiskOfRain2.GameLibs" Version="1.2.4-r.0" />
+    <PackageReference Include="UnityEngine.Modules" Version="[2019.4.26]" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="TILER2">
+      <HintPath>..\TILER2\bin\Release\netstandard2.0\TILER2.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="xcopy &quot;$(TargetPath)&quot; &quot;$(ProjectDir)Build\$(ProjectName)&quot; /Y&#xD;&#xA;xcopy &quot;$(ProjectDir)ModMeta&quot; &quot;$(ProjectDir)Build\$(ProjectName)&quot; /Y" />
+  </Target>
+
+</Project>

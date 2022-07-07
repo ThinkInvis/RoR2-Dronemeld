@@ -1,0 +1,11 @@
+{
+    "name": "Dronemeld",
+    "version_number": "1.0.0",
+    "description": "Buying duplicate drones boosts existing drones' stats instead.",
+    "website_url": "https://github.com/ThinkInvis/RoR2-Dronemeld",
+    "dependencies": [
+        "bbepis-BepInExPack-5.4.1902",
+        "tristanmcpherson-R2API-4.4.1",
+        "ThinkInvis-TILER2-7.2.0"
+    ]
+}
