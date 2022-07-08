@@ -113,6 +113,7 @@ namespace ThinkInvisible.Dronemeld {
             RecalculateStatsAPI.GetStatCoefficients += RecalculateStatsAPI_GetStatCoefficients;
             On.RoR2.CharacterBody.GetDisplayName += CharacterBody_GetDisplayName;
             On.RoR2.CharacterMaster.OnBodyStart += CharacterMaster_OnBodyStart;
+            On.EntityStates.Drone.DeathState.OnImpactServer += DeathState_OnImpactServer;
         }
 
         void UpdateMasterWhitelist() {
@@ -186,6 +187,13 @@ namespace ThinkInvisible.Dronemeld {
                     skillSlot.RunRecharge(Time.fixedDeltaTime * stacks * serverConfig.statMultCDR);
             }
             orig(self, skillSlot);
+        }
+
+        private void DeathState_OnImpactServer(On.EntityStates.Drone.DeathState.orig_OnImpactServer orig, EntityStates.Drone.DeathState self, Vector3 contactPoint) {
+            orig(self, contactPoint);
+            var count = self.characterBody.master.inventory.GetItemCount(stackItem);
+            for(var i = 0; i < count; i++)
+                orig(self, contactPoint);
         }
 
         private string CharacterBody_GetDisplayName(On.RoR2.CharacterBody.orig_GetDisplayName orig, CharacterBody self) {
