@@ -59,9 +59,17 @@ namespace ThinkInvisible.Dronemeld {
             [AutoConfigRoOSlider("+{0:N2}x", 0f, 2f)]
             public float statMultCDR { get; internal set; } = 0.6f;
 
+            [AutoConfig("If true, turrets and other immobile drones will remember all their purchase locations and constantly teleport to the nearest one to their owner.")]
+            [AutoConfigRoOCheckbox()]
+            public bool quantumTurrets { get; internal set; } = true;
+
             [AutoConfig("Which CharacterMaster prefab names to apply Dronemeld to when spawned via an interactable purchase (SummonMasterBehavior). Comma-delimited, whitespace is trimmed.")]
             [AutoConfigRoOString()]
             public string masterWhitelist { get; internal set; } = "Drone1Master, Drone2Master, DroneMissileMaster, FlameDroneMaster, MegaDroneMaster, Turret1Master, DroneBackupMaster";
+
+            [AutoConfig("Which CharacterMaster prefab names to apply QuantumTurrets behavior to. Comma-delimited, whitespace is trimmed.")]
+            [AutoConfigRoOString()]
+            public string quantumWhitelist { get; internal set; } = "Turret1Master";
         }
 
         public class ClientConfig : AutoConfigContainer {
@@ -153,6 +161,12 @@ namespace ThinkInvisible.Dronemeld {
                         var db = dm.GetBody();
                         if(db) new MsgAddDroneSize(db.gameObject).Send(R2API.Networking.NetworkDestination.Clients);
                     }
+
+                    var qt = dm.gameObject.AddComponent<DronemeldQuantumTurret>();
+                    if(!qt)
+                        dm.gameObject.AddComponent<DronemeldQuantumTurret>();
+                    else
+                        qt.RegisterLocation(self.position);
 
                     return null;
                 }
@@ -248,6 +262,50 @@ namespace ThinkInvisible.Dronemeld {
                 var body = _target.GetComponent<CharacterBody>();
                 if(!body || !body.modelLocator) return;
                 body.modelLocator.transform.localScale -= Vector3.one * clientConfig.vfxResize;
+            }
+        }
+
+        [RequireComponent(typeof(CharacterMaster))]
+        public class DronemeldQuantumTurret : MonoBehaviour {
+            readonly List<Vector3> storedStates = new();
+            CharacterMaster master;
+
+            const float EPSILON = 5f;
+
+            public void RegisterLocation(Vector3 pos) {
+                var mObj = master.GetBodyObject();
+                if(!mObj || Vector3.Distance(mObj.transform.position, pos) < EPSILON) return;
+                storedStates.Add(pos);
+            }
+
+            [System.Diagnostics.CodeAnalysis.SuppressMessage("CodeQuality", "IDE0051:Remove unused private members", Justification = "Used by Unity Engine")]
+            void Awake() {
+                master = GetComponent<CharacterMaster>();
+                Stage.onServerStageComplete += Stage_onServerStageComplete;
+            }
+
+            private void Stage_onServerStageComplete(Stage obj) {
+                storedStates.Clear();
+            }
+
+            [System.Diagnostics.CodeAnalysis.SuppressMessage("CodeQuality", "IDE0051:Remove unused private members", Justification = "Used by Unity Engine")]
+            void FixedUpdate() {
+                if(!NetworkServer.active || storedStates.Count < 1) return;
+                var owner = master.minionOwnership.ownerMaster;
+                if(!owner) return;
+                var ownerObj = owner.GetBodyObject();
+                if(!ownerObj) return;
+                var mObj = master.GetBodyObject();
+                if(!mObj) return;
+
+                var ownerDist = Vector3.Distance(ownerObj.transform.position, mObj.transform.position);
+                var closest = storedStates.OrderBy(state => Vector3.Distance(ownerObj.transform.position, state)).First();
+                var closestDist = Vector3.Distance(ownerObj.transform.position, closest);
+                if(closestDist < ownerDist) {
+                    storedStates.Remove(closest);
+                    storedStates.Add(mObj.transform.position);
+                    TeleportHelper.TeleportGameObject(mObj, closest);
+                }
             }
         }
 
