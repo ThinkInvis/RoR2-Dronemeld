@@ -27,7 +27,7 @@ namespace ThinkInvisible.Dronemeld {
         internal static BepInEx.Logging.ManualLogSource _logger;
 
         public enum DronemeldPriorityOrder {
-            RoundRobin, AllAtOnce, Random, FirstOnly
+            RoundRobin, Random, FirstOnly
         }
 
         public class ServerConfig : AutoConfigContainer {
@@ -136,27 +136,18 @@ namespace ThinkInvisible.Dronemeld {
                     (serverConfig.perPlayer ? (m.minionOwnership.ownerMaster == actiMaster) : (m.teamIndex == actiMaster.teamIndex))
                     && m.gameObject.name.Replace("(Clone)", "") == self.masterPrefab.name);
                 if(extantDronesOfType.Count() >= serverConfig.maxDronesPerType) {
-                    if(serverConfig.priorityOrder == DronemeldPriorityOrder.AllAtOnce || serverConfig.maxDronesPerType == 1) {
-                        foreach(var dm in extantDronesOfType) {
-                            dm.inventory.GiveItem(stackItem);
-                            var db = dm.GetBody();
-                            if(db) new MsgAddDroneSize(db.gameObject).Send(R2API.Networking.NetworkDestination.Clients);
-                        }
-                        return extantDronesOfType.First();
-                    } else {
-                        var dm = serverConfig.priorityOrder switch {
-                            DronemeldPriorityOrder.Random => rng.NextElementUniform(extantDronesOfType.ToArray()),
-                            DronemeldPriorityOrder.FirstOnly => extantDronesOfType.First(),
-                            DronemeldPriorityOrder.RoundRobin => extantDronesOfType.OrderBy(d => d.inventory.GetItemCount(stackItem)).First(),
-                            _ => throw new System.InvalidOperationException("Encountered invalid value of serverConfig.priorityOrder.")
-                        };
+                    var dm = serverConfig.priorityOrder switch {
+                        DronemeldPriorityOrder.Random => rng.NextElementUniform(extantDronesOfType.ToArray()),
+                        DronemeldPriorityOrder.FirstOnly => extantDronesOfType.First(),
+                        DronemeldPriorityOrder.RoundRobin => extantDronesOfType.OrderBy(d => d.inventory.GetItemCount(stackItem)).First(),
+                        _ => throw new System.InvalidOperationException("Encountered invalid value of serverConfig.priorityOrder.")
+                    };
 
-                        dm.inventory.GiveItem(stackItem);
-                        var db = dm.GetBody();
-                        if(db) new MsgAddDroneSize(db.gameObject).Send(R2API.Networking.NetworkDestination.Clients);
+                    dm.inventory.GiveItem(stackItem);
+                    var db = dm.GetBody();
+                    if(db) new MsgAddDroneSize(db.gameObject).Send(R2API.Networking.NetworkDestination.Clients);
 
-                        return dm;
-                    }
+                    return dm;
                 }
             }
             return orig(self, activator);
