@@ -65,7 +65,7 @@ namespace ThinkInvisible.Dronemeld {
         }
 
         public class ClientConfig : AutoConfigContainer {
-            [AutoConfig("If greater than 0, applies a visual size increase of this percentage to drones per Dronemeld stack.", AutoConfigFlags.None)]
+            [AutoConfig("If greater than 0, applies a visual size increase of this percentage to drones per Dronemeld stack.", AutoConfigFlags.DeferUntilNextStage)]
             [AutoConfigRoOSlider("{0:P0}", 0f, 1f)]
             public float vfxResize { get; internal set; } = 0.25f;
         }
