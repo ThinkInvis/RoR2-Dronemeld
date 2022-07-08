@@ -192,7 +192,7 @@ namespace ThinkInvisible.Dronemeld {
             if(self && self.master) {
                 var stacks = self.master.inventory.GetItemCount(stackItem);
                 if(stacks > 0) {
-                    return $"{retv} <color=#AAAAAA>x{stacks + 1}</color>";
+                    return $"{retv} <style=cStack>x{stacks + 1}</style>";
                 }
             }
             return retv;
