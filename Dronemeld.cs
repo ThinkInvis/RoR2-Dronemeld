@@ -67,6 +67,10 @@ namespace ThinkInvisible.Dronemeld {
             [AutoConfigRoOString()]
             public string masterWhitelist { get; internal set; } = "Drone1Master, Drone2Master, DroneMissileMaster, FlameDroneMaster, MegaDroneMaster, Turret1Master, DroneBackupMaster";
 
+            [AutoConfig("If true, Dronemeld will apply to Goobos Jr.")]
+            [AutoConfigRoOCheckbox()]
+            public bool applyToGoobo { get; internal set; } = true;
+
             [AutoConfig("Which CharacterMaster prefab names to apply QuantumTurrets behavior to. Comma-delimited, whitespace is trimmed.")]
             [AutoConfigRoOString()]
             public string quantumWhitelist { get; internal set; } = "Turret1Master";
@@ -122,11 +126,35 @@ namespace ThinkInvisible.Dronemeld {
             On.RoR2.CharacterMaster.OnBodyStart += CharacterMaster_OnBodyStart;
             On.EntityStates.Drone.DeathState.OnImpactServer += DeathState_OnImpactServer;
             On.RoR2.MasterSummon.Perform += MasterSummon_Perform;
+            On.RoR2.Projectile.GummyCloneProjectile.SpawnGummyClone += GummyCloneProjectile_SpawnGummyClone;
         }
 
         void UpdateMasterWhitelist() {
             _masterWhitelist.Clear();
             _masterWhitelist.UnionWith(serverConfig.masterWhitelist.Split(',').Select(x => x.Trim()));
+        }
+
+        CharacterMaster TryApply(IEnumerable<CharacterMaster> targetMasters) {
+            if(targetMasters.Count() >= serverConfig.maxDronesPerType) {
+                var dm = serverConfig.priorityOrder switch {
+                    DronemeldPriorityOrder.Random => rng.NextElementUniform(targetMasters.ToArray()),
+                    DronemeldPriorityOrder.FirstOnly => targetMasters.First(),
+                    DronemeldPriorityOrder.RoundRobin => targetMasters.OrderBy(d => d.inventory.GetItemCount(stackItem)).First(),
+                    _ => throw new System.InvalidOperationException("Encountered invalid value of serverConfig.priorityOrder.")
+                };
+
+                if(dm.TryGetComponent<MasterSuicideOnTimer>(out var mst)) {
+                    dm.gameObject.AddComponent<TimedDronemeldStack>().Activate(mst.lifeTimer - mst.timer);
+                    mst.timer = 0f;
+                } else {
+                    dm.inventory.GiveItem(stackItem);
+                    var db = dm.GetBody();
+                    if(db) new MsgAddDroneSize(db.gameObject).Send(R2API.Networking.NetworkDestination.Clients);
+                }
+
+                return dm;
+            }
+            return null;
         }
 
         #region Hooks
@@ -145,27 +173,12 @@ namespace ThinkInvisible.Dronemeld {
                 var extantDronesOfType = CharacterMaster.readOnlyInstancesList.Where(m =>
                     (serverConfig.perPlayer ? (m.minionOwnership.ownerMaster == actiBody.master) : (m.teamIndex == actiBody.master.teamIndex))
                     && m.gameObject.name.Replace("(Clone)", "") == self.masterPrefab.name);
-                if(extantDronesOfType.Count() >= serverConfig.maxDronesPerType) {
-                    var dm = serverConfig.priorityOrder switch {
-                        DronemeldPriorityOrder.Random => rng.NextElementUniform(extantDronesOfType.ToArray()),
-                        DronemeldPriorityOrder.FirstOnly => extantDronesOfType.First(),
-                        DronemeldPriorityOrder.RoundRobin => extantDronesOfType.OrderBy(d => d.inventory.GetItemCount(stackItem)).First(),
-                        _ => throw new System.InvalidOperationException("Encountered invalid value of serverConfig.priorityOrder.")
-                    };
-
-                    if(dm.TryGetComponent<MasterSuicideOnTimer>(out var mst)) {
-                        dm.gameObject.AddComponent<TimedDronemeldStack>().Activate(mst.lifeTimer - mst.timer);
-                        mst.timer = 0f;
-                    } else {
-                        dm.inventory.GiveItem(stackItem);
-                        var db = dm.GetBody();
-                        if(db) new MsgAddDroneSize(db.gameObject).Send(R2API.Networking.NetworkDestination.Clients);
-                    }
-
-                    if(serverConfig.quantumWhitelist.Contains(dm.gameObject.name.Replace("(Clone)", "")) {
-                        var qt = dm.gameObject.AddComponent<DronemeldQuantumTurret>();
+                var result = TryApply(extantDronesOfType);
+                if(result) {
+                    if(serverConfig.quantumWhitelist.Contains(result.gameObject.name.Replace("(Clone)", ""))) {
+                        var qt = result.gameObject.AddComponent<DronemeldQuantumTurret>();
                         if(!qt)
-                            dm.gameObject.AddComponent<DronemeldQuantumTurret>();
+                            result.gameObject.AddComponent<DronemeldQuantumTurret>();
                         else
                             qt.RegisterLocation(self.position);
                     }
@@ -174,6 +187,17 @@ namespace ThinkInvisible.Dronemeld {
                 }
             }
             return orig(self);
+        }
+
+        private void GummyCloneProjectile_SpawnGummyClone(On.RoR2.Projectile.GummyCloneProjectile.orig_SpawnGummyClone orig, RoR2.Projectile.GummyCloneProjectile self) {
+            if(serverConfig.applyToGoobo && self.TryGetComponent<RoR2.Projectile.ProjectileController>(out var pc) && pc.owner && pc.owner.TryGetComponent<CharacterBody>(out var ob) && ob.master) {
+                var extantGoobos = CharacterMaster.readOnlyInstancesList.Where(m =>
+                    (serverConfig.perPlayer ? (m.minionOwnership.ownerMaster == ob.master) : (m.teamIndex == ob.master.teamIndex))
+                    && m.inventory.GetItemCount(DLC1Content.Items.GummyCloneIdentifier) > 0);
+                if(TryApply(extantGoobos))
+                    return;
+            }
+            orig(self);
         }
 
         private void CharacterMaster_OnBodyStart(On.RoR2.CharacterMaster.orig_OnBodyStart orig, CharacterMaster self, CharacterBody body) {
