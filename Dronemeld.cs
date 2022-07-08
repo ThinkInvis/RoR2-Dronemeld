@@ -61,7 +61,7 @@ namespace ThinkInvisible.Dronemeld {
 
             [AutoConfig("Which CharacterMaster prefab names to apply Dronemeld to when spawned via an interactable purchase (SummonMasterBehavior). Comma-delimited, whitespace is trimmed.")]
             [AutoConfigRoOString()]
-            public string masterWhitelist { get; internal set; } = "Drone1Master, Drone2Master, DroneMissileMaster, FlameDroneMaster, MegaDroneMaster, Turret1Master";
+            public string masterWhitelist { get; internal set; } = "Drone1Master, Drone2Master, DroneMissileMaster, FlameDroneMaster, MegaDroneMaster, Turret1Master, DroneBackupMaster";
         }
 
         public class ClientConfig : AutoConfigContainer {
@@ -107,13 +107,13 @@ namespace ThinkInvisible.Dronemeld {
 
             R2API.Networking.NetworkingAPI.RegisterMessageType<MsgAddDroneSize>();
 
-            On.RoR2.SummonMasterBehavior.OpenSummonReturnMaster += SummonMasterBehavior_OpenSummonReturnMaster;
             On.RoR2.Run.Start += Run_Start;
             On.RoR2.Skills.SkillDef.OnFixedUpdate += SkillDef_OnFixedUpdate;
             RecalculateStatsAPI.GetStatCoefficients += RecalculateStatsAPI_GetStatCoefficients;
             On.RoR2.CharacterBody.GetDisplayName += CharacterBody_GetDisplayName;
             On.RoR2.CharacterMaster.OnBodyStart += CharacterMaster_OnBodyStart;
             On.EntityStates.Drone.DeathState.OnImpactServer += DeathState_OnImpactServer;
+            On.RoR2.MasterSummon.Perform += MasterSummon_Perform;
         }
 
         void UpdateMasterWhitelist() {
@@ -128,12 +128,14 @@ namespace ThinkInvisible.Dronemeld {
             rng = new Xoroshiro128Plus(self.seed);
         }
 
-        private CharacterMaster SummonMasterBehavior_OpenSummonReturnMaster(On.RoR2.SummonMasterBehavior.orig_OpenSummonReturnMaster orig, SummonMasterBehavior self, Interactor activator) {
-            if(self.masterPrefab && _masterWhitelist.Contains(self.masterPrefab.name) && activator) {
-                var actiMaster = activator.gameObject.GetComponent<CharacterBody>().master;
-                if(!actiMaster) return orig(self, activator);
+        private CharacterMaster MasterSummon_Perform(On.RoR2.MasterSummon.orig_Perform orig, MasterSummon self) {
+            if(self.masterPrefab
+                && _masterWhitelist.Contains(self.masterPrefab.name)
+                && self.summonerBodyObject
+                && self.summonerBodyObject.TryGetComponent<CharacterBody>(out var actiBody)
+                && actiBody.master) {
                 var extantDronesOfType = CharacterMaster.readOnlyInstancesList.Where(m =>
-                    (serverConfig.perPlayer ? (m.minionOwnership.ownerMaster == actiMaster) : (m.teamIndex == actiMaster.teamIndex))
+                    (serverConfig.perPlayer ? (m.minionOwnership.ownerMaster == actiBody.master) : (m.teamIndex == actiBody.master.teamIndex))
                     && m.gameObject.name.Replace("(Clone)", "") == self.masterPrefab.name);
                 if(extantDronesOfType.Count() >= serverConfig.maxDronesPerType) {
                     var dm = serverConfig.priorityOrder switch {
@@ -143,14 +145,19 @@ namespace ThinkInvisible.Dronemeld {
                         _ => throw new System.InvalidOperationException("Encountered invalid value of serverConfig.priorityOrder.")
                     };
 
-                    dm.inventory.GiveItem(stackItem);
-                    var db = dm.GetBody();
-                    if(db) new MsgAddDroneSize(db.gameObject).Send(R2API.Networking.NetworkDestination.Clients);
+                    if(dm.TryGetComponent<MasterSuicideOnTimer>(out var mst)) {
+                        dm.gameObject.AddComponent<TimedDronemeldStack>().Activate(mst.lifeTimer - mst.timer);
+                        mst.timer = 0f;
+                    } else {
+                        dm.inventory.GiveItem(stackItem);
+                        var db = dm.GetBody();
+                        if(db) new MsgAddDroneSize(db.gameObject).Send(R2API.Networking.NetworkDestination.Clients);
+                    }
 
-                    return dm;
+                    return null;
                 }
             }
-            return orig(self, activator);
+            return orig(self);
         }
 
         private void CharacterMaster_OnBodyStart(On.RoR2.CharacterMaster.orig_OnBodyStart orig, CharacterMaster self, CharacterBody body) {
@@ -219,6 +226,61 @@ namespace ThinkInvisible.Dronemeld {
                 var body = _target.GetComponent<CharacterBody>();
                 if(!body || !body.modelLocator) return;
                 body.modelLocator.transform.localScale += Vector3.one * clientConfig.vfxResize;
+            }
+        }
+        public struct MsgRemoveDroneSize : INetMessage {
+            GameObject _target;
+
+            public MsgRemoveDroneSize(GameObject target) {
+                _target = target;
+            }
+
+            public void Serialize(NetworkWriter writer) {
+                writer.Write(_target);
+            }
+
+            public void Deserialize(NetworkReader reader) {
+                _target = reader.ReadGameObject();
+            }
+
+            public void OnReceived() {
+                if(!_target || clientConfig.vfxResize == 0) return;
+                var body = _target.GetComponent<CharacterBody>();
+                if(!body || !body.modelLocator) return;
+                body.modelLocator.transform.localScale -= Vector3.one * clientConfig.vfxResize;
+            }
+        }
+
+        [RequireComponent(typeof(CharacterMaster))]
+        public class TimedDronemeldStack : MonoBehaviour {
+            float stopwatch = 0f;
+            bool started = false;
+            CharacterMaster boundCM;
+
+            public void Activate(float time) {
+                if(started) return;
+                boundCM.inventory.GiveItem(stackItem);
+                var cb = boundCM.GetBody();
+                if(cb) new MsgAddDroneSize(cb.gameObject).Send(R2API.Networking.NetworkDestination.Clients);
+                stopwatch = time;
+                started = true;
+            }
+
+            [System.Diagnostics.CodeAnalysis.SuppressMessage("CodeQuality", "IDE0051:Remove unused private members", Justification = "Used by Unity Engine")]
+            void Awake() {
+                boundCM = GetComponent<CharacterMaster>();
+            }
+
+            [System.Diagnostics.CodeAnalysis.SuppressMessage("CodeQuality", "IDE0051:Remove unused private members", Justification = "Used by Unity Engine")]
+            void FixedUpdate() {
+                if(!started) return;
+                stopwatch -= Time.fixedDeltaTime;
+                if(stopwatch <= 0f) {
+                    boundCM.inventory.RemoveItem(stackItem);
+                    var cb = boundCM.GetBody();
+                    if(cb) new MsgRemoveDroneSize(cb.gameObject).Send(R2API.Networking.NetworkDestination.Clients);
+                    Destroy(this);
+                }
             }
         }
     }
