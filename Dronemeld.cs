@@ -204,7 +204,7 @@ namespace ThinkInvisible.Dronemeld {
             orig(self, body);
             var stacks = self.inventory.GetItemCount(stackItem);
             if(NetworkClient.active && body.modelLocator && clientConfig.vfxResize > 0f && stacks > 0) {
-                body.modelLocator.transform.localScale += Vector3.one * clientConfig.vfxResize * self.inventory.GetItemCount(stackItem);
+                body.modelLocator.modelTransform.localScale += Vector3.one * clientConfig.vfxResize * self.inventory.GetItemCount(stackItem);
             }
         }
 
@@ -265,7 +265,7 @@ namespace ThinkInvisible.Dronemeld {
                 if(!_target || clientConfig.vfxResize == 0) return;
                 var body = _target.GetComponent<CharacterBody>();
                 if(!body || !body.modelLocator) return;
-                body.modelLocator.transform.localScale += Vector3.one * clientConfig.vfxResize;
+                body.modelLocator.modelTransform.localScale += Vector3.one * clientConfig.vfxResize;
             }
         }
         public struct MsgRemoveDroneSize : INetMessage {
@@ -287,7 +287,7 @@ namespace ThinkInvisible.Dronemeld {
                 if(!_target || clientConfig.vfxResize == 0) return;
                 var body = _target.GetComponent<CharacterBody>();
                 if(!body || !body.modelLocator) return;
-                body.modelLocator.transform.localScale -= Vector3.one * clientConfig.vfxResize;
+                body.modelLocator.modelTransform.localScale -= Vector3.one * clientConfig.vfxResize;
             }
         }
 
