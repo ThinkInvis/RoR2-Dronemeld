@@ -162,11 +162,13 @@ namespace ThinkInvisible.Dronemeld {
                         if(db) new MsgAddDroneSize(db.gameObject).Send(R2API.Networking.NetworkDestination.Clients);
                     }
 
-                    var qt = dm.gameObject.AddComponent<DronemeldQuantumTurret>();
-                    if(!qt)
-                        dm.gameObject.AddComponent<DronemeldQuantumTurret>();
-                    else
-                        qt.RegisterLocation(self.position);
+                    if(serverConfig.quantumWhitelist.Contains(dm.gameObject.name.Replace("(Clone)", "")) {
+                        var qt = dm.gameObject.AddComponent<DronemeldQuantumTurret>();
+                        if(!qt)
+                            dm.gameObject.AddComponent<DronemeldQuantumTurret>();
+                        else
+                            qt.RegisterLocation(self.position);
+                    }
 
                     return null;
                 }
