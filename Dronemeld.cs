@@ -10,6 +10,8 @@ using System.Linq;
 using RoR2;
 using UnityEngine.Networking;
 using R2API.Networking.Interfaces;
+using MonoMod.Cil;
+using System;
 
 namespace ThinkInvisible.Dronemeld {
     [BepInPlugin(ModGuid, ModName, ModVer)]
@@ -65,7 +67,7 @@ namespace ThinkInvisible.Dronemeld {
 
             [AutoConfig("Which CharacterMaster prefab names to apply Dronemeld to when spawned via an interactable purchase (SummonMasterBehavior). Comma-delimited, whitespace is trimmed.")]
             [AutoConfigRoOString()]
-            public string masterWhitelist { get; internal set; } = "Drone1Master, Drone2Master, DroneMissileMaster, FlameDroneMaster, MegaDroneMaster, Turret1Master, DroneBackupMaster";
+            public string masterWhitelist { get; internal set; } = "Drone1Master, Drone2Master, DroneMissileMaster, FlameDroneMaster, MegaDroneMaster, Turret1Master, DroneBackupMaster, BeetleGuardAllyMaster, VoidMegaCrabAllyMaster, VoidJailerAllyMaster, NullifierAllyMaster, MinorConstructOnKillMaster, SquidTurretMaster";
 
             [AutoConfig("If true, Dronemeld will apply to Goobos Jr.")]
             [AutoConfigRoOCheckbox()]
@@ -73,7 +75,7 @@ namespace ThinkInvisible.Dronemeld {
 
             [AutoConfig("Which CharacterMaster prefab names to apply QuantumTurrets behavior to. Comma-delimited, whitespace is trimmed.")]
             [AutoConfigRoOString()]
-            public string quantumWhitelist { get; internal set; } = "Turret1Master";
+            public string quantumWhitelist { get; internal set; } = "Turret1Master, MinorConstructOnKillMaster, SquidTurretMaster";
         }
 
         public class ClientConfig : AutoConfigContainer {
@@ -127,6 +129,8 @@ namespace ThinkInvisible.Dronemeld {
             On.EntityStates.Drone.DeathState.OnImpactServer += DeathState_OnImpactServer;
             On.RoR2.MasterSummon.Perform += MasterSummon_Perform;
             On.RoR2.Projectile.GummyCloneProjectile.SpawnGummyClone += GummyCloneProjectile_SpawnGummyClone;
+            On.RoR2.DirectorCore.TrySpawnObject += DirectorCore_TrySpawnObject;
+            IL.RoR2.CharacterMaster.GetDeployableCount += CharacterMaster_GetDeployableCount;
         }
 
         void UpdateMasterWhitelist() {
@@ -187,6 +191,64 @@ namespace ThinkInvisible.Dronemeld {
                 }
             }
             return orig(self);
+        }
+
+        private GameObject DirectorCore_TrySpawnObject(On.RoR2.DirectorCore.orig_TrySpawnObject orig, DirectorCore self, DirectorSpawnRequest directorSpawnRequest) {
+            if(_masterWhitelist.Contains(directorSpawnRequest.spawnCard.prefab.name)
+                && directorSpawnRequest.summonerBodyObject
+                && directorSpawnRequest.summonerBodyObject.TryGetComponent<CharacterBody>(out var summonerBody)
+                && summonerBody.master) {
+                var extantDronesOfType = CharacterMaster.readOnlyInstancesList.Where(m =>
+                    (serverConfig.perPlayer ? (m.minionOwnership.ownerMaster == summonerBody.master) : (m.teamIndex == summonerBody.master.teamIndex))
+                    && m.gameObject.name.Replace("(Clone)", "") == directorSpawnRequest.spawnCard.prefab.name);
+                var result = TryApply(extantDronesOfType);
+                if(result) {
+                    if(serverConfig.quantumWhitelist.Contains(result.gameObject.name.Replace("(Clone)", ""))) {
+                        var qt = result.gameObject.AddComponent<DronemeldQuantumTurret>();
+                        if(!qt)
+                            result.gameObject.AddComponent<DronemeldQuantumTurret>();
+                        else {
+                            var retv = orig(self, directorSpawnRequest); //retrieve spawn position by actually spawning the object, then destroying it
+                            if(retv) {
+                                qt.RegisterLocation(retv.transform.position);
+                                retv.GetComponent<CharacterMaster>().TrueKill();
+                                result.inventory.RemoveItem(stackItem); //remove duplicate stack caused by this
+                            }
+                        }
+                    }
+
+                    return null;
+                }
+            }
+            return orig(self, directorSpawnRequest);
+        }
+
+        private void CharacterMaster_GetDeployableCount(ILContext il) {
+            ILCursor c = new(il);
+
+            if(c.TryGotoNext(MoveType.Before,
+                i => i.MatchLdfld<DeployableInfo>(nameof(DeployableInfo.slot))
+                )) {
+                DeployableInfo capturedDI = default;
+                c.EmitDelegate<Func<DeployableInfo, DeployableInfo>>(di => { capturedDI = di; return di; });
+                if(c.TryGotoNext(MoveType.After,
+                    i => i.MatchLdloc(0),
+                    i => i.MatchLdcI4(1),
+                    i => i.MatchAdd(),
+                    i => i.MatchStloc(0))) {
+                    c.Index--;
+                    c.EmitDelegate<Func<int, int>>(addend => {
+                        if(capturedDI.deployable && capturedDI.deployable.TryGetComponent<Inventory>(out var inv)) {
+                            return inv.GetItemCount(stackItem) + addend;
+                        }
+                        return addend;
+                    });
+                } else {
+                    _logger.LogError("Failed to apply IL patch: CharacterMaster_GetDeployableCount, part 2. Dronemeld will fail to work or have unexpected results on certain spawn methods.");
+                }
+            } else {
+                _logger.LogError("Failed to apply IL patch: CharacterMaster_GetDeployableCount, part 1. Dronemeld will fail to work or have unexpected results on certain spawn methods.");
+            }
         }
 
         private void GummyCloneProjectile_SpawnGummyClone(On.RoR2.Projectile.GummyCloneProjectile.orig_SpawnGummyClone orig, RoR2.Projectile.GummyCloneProjectile self) {
