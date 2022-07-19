@@ -1,5 +1,11 @@
 ﻿# Dronemeld Changelog
 
+**1.2.0**
+
+- Now works on Squid Polyp, Queen's Gland, Defense Nucleus, and Newly-Hatched Zoea.
+- Fixed Empathy Cores not counting Dronemeld stacks as additional allies.
+- Now provides Quantum Turrets behavior for Squid Polyp and Defense Nucleus by default.
+
 **1.1.0**
 
 - Now works on The Back-up and Goobo Jr.

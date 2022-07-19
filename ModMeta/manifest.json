@@ -1,7 +1,7 @@
 {
     "name": "Dronemeld",
-    "version_number": "1.1.0",
-    "description": "Buying duplicate drones boosts existing drones' stats instead.",
+    "version_number": "1.2.0",
+    "description": "Duplicate summons boost existing summons' stats instead.",
     "website_url": "https://github.com/ThinkInvis/RoR2-Dronemeld",
     "dependencies": [
         "bbepis-BepInExPack-5.4.1902",
