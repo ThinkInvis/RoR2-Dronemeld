@@ -12,6 +12,7 @@ using UnityEngine.Networking;
 using R2API.Networking.Interfaces;
 using MonoMod.Cil;
 using System;
+using System.Collections.ObjectModel;
 
 namespace ThinkInvisible.Dronemeld {
     [BepInPlugin(ModGuid, ModName, ModVer)]
@@ -131,6 +132,7 @@ namespace ThinkInvisible.Dronemeld {
             On.RoR2.Projectile.GummyCloneProjectile.SpawnGummyClone += GummyCloneProjectile_SpawnGummyClone;
             On.RoR2.DirectorCore.TrySpawnObject += DirectorCore_TrySpawnObject;
             IL.RoR2.CharacterMaster.GetDeployableCount += CharacterMaster_GetDeployableCount;
+            IL.RoR2.CharacterBody.RecalculateStats += CharacterBody_RecalculateStats;
         }
 
         void UpdateMasterWhitelist() {
@@ -248,6 +250,23 @@ namespace ThinkInvisible.Dronemeld {
                 }
             } else {
                 _logger.LogError("Failed to apply IL patch: CharacterMaster_GetDeployableCount, part 1. Dronemeld will fail to work or have unexpected results on certain spawn methods.");
+            }
+        }
+
+        private void CharacterBody_RecalculateStats(ILContext il) {
+            ILCursor c = new(il);
+            if(c.TryGotoNext(MoveType.After,
+                i => i.MatchCallOrCallvirt<TeamComponent>(nameof(TeamComponent.GetTeamMembers)),
+                i => i.MatchCallOrCallvirt(out _)
+                )) {
+                c.Index--;
+                c.Remove();
+                c.EmitDelegate<Func<ReadOnlyCollection<TeamComponent>, int>>(members => members.Sum(m => 
+                    (m.TryGetComponent<CharacterBody>(out var cb) && cb.inventory)
+                    ? (1 + cb.inventory.GetItemCount(stackItem))
+                    : 1));
+            } else {
+                _logger.LogError("Failed to apply IL patch: CharacterBody_RecalculateStats. Empathy Cores will not count Dronemeld stacks for their per-ally stat boost.");
             }
         }
 
