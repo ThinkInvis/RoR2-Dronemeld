@@ -89,7 +89,7 @@ namespace ThinkInvisible.Dronemeld {
         public static ClientConfig clientConfig = new();
 
         private static readonly HashSet<string> _masterWhitelist = new();
-        private Xoroshiro128Plus rng;
+        private static Xoroshiro128Plus rng;
         public static ItemDef stackItem;
 
         private void Awake() {
@@ -140,11 +140,11 @@ namespace ThinkInvisible.Dronemeld {
             _masterWhitelist.UnionWith(serverConfig.masterWhitelist.Split(',').Select(x => x.Trim()));
         }
 
-        public bool IsDronemeldEnabledFor(string masterPrefabName) {
+        public static bool IsDronemeldEnabledFor(string masterPrefabName) {
             return _masterWhitelist.Contains(masterPrefabName);
         }
 
-        public CharacterMaster TryApply(CharacterMaster ownerMaster, string targetPrefabName) {
+        public static CharacterMaster TryApply(CharacterMaster ownerMaster, string targetPrefabName) {
             if(!IsDronemeldEnabledFor(targetPrefabName)) return null;
             var extantDronesOfType = CharacterMaster.readOnlyInstancesList.Where(m =>
                 (serverConfig.perPlayer ? (m.minionOwnership.ownerMaster == ownerMaster) : (m.teamIndex == ownerMaster.teamIndex))
@@ -152,7 +152,7 @@ namespace ThinkInvisible.Dronemeld {
             return TryApply(extantDronesOfType);
         }
 
-        public CharacterMaster TryApply(IEnumerable<CharacterMaster> targetMasters) {
+        public static CharacterMaster TryApply(IEnumerable<CharacterMaster> targetMasters) {
             if(targetMasters.Count() >= serverConfig.maxDronesPerType) {
                 var dm = serverConfig.priorityOrder switch {
                     DronemeldPriorityOrder.Random => rng.NextElementUniform(targetMasters.ToArray()),
