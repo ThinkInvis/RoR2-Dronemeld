@@ -313,8 +313,10 @@ namespace ThinkInvisible.Dronemeld {
         }
 
         private void DeathState_OnImpactServer(On.EntityStates.Drone.DeathState.orig_OnImpactServer orig, EntityStates.Drone.DeathState self, Vector3 contactPoint) {
+            int count = 0;
+            if(self.characterBody && self.characterBody.master && self.characterBody.master.inventory)
+                count = self.characterBody.master.inventory.GetItemCount(stackItem);
             orig(self, contactPoint);
-            var count = self.characterBody.master.inventory.GetItemCount(stackItem);
             for(var i = 0; i < count; i++)
                 orig(self, contactPoint);
         }
