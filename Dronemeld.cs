@@ -145,6 +145,7 @@ namespace ThinkInvisible.Dronemeld {
         }
 
         CharacterMaster TryApply(CharacterMaster ownerMaster, string targetPrefabName) {
+            if(!IsDronemeldEnabledFor(targetPrefabName)) return null;
             var extantDronesOfType = CharacterMaster.readOnlyInstancesList.Where(m =>
                 (serverConfig.perPlayer ? (m.minionOwnership.ownerMaster == ownerMaster) : (m.teamIndex == ownerMaster.teamIndex))
                 && m.gameObject.name.Replace("(Clone)", "") == targetPrefabName);
@@ -183,7 +184,6 @@ namespace ThinkInvisible.Dronemeld {
 
         private CharacterMaster MasterSummon_Perform(On.RoR2.MasterSummon.orig_Perform orig, MasterSummon self) {
             if(self.masterPrefab
-                && IsDronemeldEnabledFor(self.masterPrefab.name)
                 && self.summonerBodyObject
                 && self.summonerBodyObject.TryGetComponent<CharacterBody>(out var actiBody)
                 && actiBody.master) {
@@ -204,8 +204,7 @@ namespace ThinkInvisible.Dronemeld {
         }
 
         private GameObject DirectorCore_TrySpawnObject(On.RoR2.DirectorCore.orig_TrySpawnObject orig, DirectorCore self, DirectorSpawnRequest directorSpawnRequest) {
-            if(IsDronemeldEnabledFor(directorSpawnRequest.spawnCard.prefab.name)
-                && directorSpawnRequest.summonerBodyObject
+            if(directorSpawnRequest.summonerBodyObject
                 && directorSpawnRequest.summonerBodyObject.TryGetComponent<CharacterBody>(out var summonerBody)
                 && summonerBody.master) {
                 var result = TryApply(summonerBody.master, directorSpawnRequest.spawnCard.prefab.name);
