@@ -21,7 +21,7 @@ namespace ThinkInvisible.Dronemeld {
     [R2APISubmoduleDependency(nameof(ItemAPI), nameof(LanguageAPI), nameof(PrefabAPI), nameof(RecalculateStatsAPI))]
     [NetworkCompatibility(CompatibilityLevel.EveryoneMustHaveMod, VersionStrictness.EveryoneNeedSameModVersion)]
     public class DronemeldPlugin:BaseUnityPlugin {
-        public const string ModVer = "1.2.0";
+        public const string ModVer = "1.3.0";
         public const string ModName = "Dronemeld";
         public const string ModGuid = "com.ThinkInvisible.Dronemeld";
 

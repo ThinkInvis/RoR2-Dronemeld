@@ -1,5 +1,15 @@
 ﻿# Dronemeld Changelog
 
+**1.3.0**
+
+- Increased null safety of drone death hook.
+	- Fixes an issue with The Back-up.
+- Added better mod compatibility support.
+	- Now exposes enabled drone types via `public static bool IsDronemeldEnabledFor(string masterPrefabName)`.
+	- Now exposes `public static CharacterMaster TryApply(...)` with 2 overrides. Recommend using `CharacterMaster, string` signature.
+- Updated TILER2 dependency to 7.3.2.
+- For developers: NuGet config is now localized (building project no longer requires end-user modification of system or directory NuGet config).
+
 **1.2.0**
 
 - Now works on Squid Polyp, Queen's Gland, Defense Nucleus, and Newly-Hatched Zoea.
