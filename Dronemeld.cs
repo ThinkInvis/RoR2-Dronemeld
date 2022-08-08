@@ -158,7 +158,7 @@ namespace ThinkInvisible.Dronemeld {
                     DronemeldPriorityOrder.Random => rng.NextElementUniform(targetMasters.ToArray()),
                     DronemeldPriorityOrder.FirstOnly => targetMasters.First(),
                     DronemeldPriorityOrder.RoundRobin => targetMasters.OrderBy(d => d.inventory.GetItemCount(stackItem)).First(),
-                    _ => throw new System.InvalidOperationException("Encountered invalid value of serverConfig.priorityOrder.")
+                    _ => throw new InvalidOperationException("Encountered invalid value of serverConfig.priorityOrder.")
                 };
 
                 if(dm.TryGetComponent<MasterSuicideOnTimer>(out var mst)) {
