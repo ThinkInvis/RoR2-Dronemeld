@@ -144,7 +144,7 @@ namespace ThinkInvisible.Dronemeld {
             return _masterWhitelist.Contains(masterPrefabName);
         }
 
-        CharacterMaster TryApply(CharacterMaster ownerMaster, string targetPrefabName) {
+        public CharacterMaster TryApply(CharacterMaster ownerMaster, string targetPrefabName) {
             if(!IsDronemeldEnabledFor(targetPrefabName)) return null;
             var extantDronesOfType = CharacterMaster.readOnlyInstancesList.Where(m =>
                 (serverConfig.perPlayer ? (m.minionOwnership.ownerMaster == ownerMaster) : (m.teamIndex == ownerMaster.teamIndex))
@@ -152,7 +152,7 @@ namespace ThinkInvisible.Dronemeld {
             return TryApply(extantDronesOfType);
         }
 
-        CharacterMaster TryApply(IEnumerable<CharacterMaster> targetMasters) {
+        public CharacterMaster TryApply(IEnumerable<CharacterMaster> targetMasters) {
             if(targetMasters.Count() >= serverConfig.maxDronesPerType) {
                 var dm = serverConfig.priorityOrder switch {
                     DronemeldPriorityOrder.Random => rng.NextElementUniform(targetMasters.ToArray()),
