@@ -140,6 +140,13 @@ namespace ThinkInvisible.Dronemeld {
             _masterWhitelist.UnionWith(serverConfig.masterWhitelist.Split(',').Select(x => x.Trim()));
         }
 
+        CharacterMaster TryApply(CharacterMaster ownerMaster, string targetPrefabName) {
+            var extantDronesOfType = CharacterMaster.readOnlyInstancesList.Where(m =>
+                (serverConfig.perPlayer ? (m.minionOwnership.ownerMaster == ownerMaster) : (m.teamIndex == ownerMaster.teamIndex))
+                && m.gameObject.name.Replace("(Clone)", "") == targetPrefabName);
+            return TryApply(extantDronesOfType);
+        }
+
         CharacterMaster TryApply(IEnumerable<CharacterMaster> targetMasters) {
             if(targetMasters.Count() >= serverConfig.maxDronesPerType) {
                 var dm = serverConfig.priorityOrder switch {
@@ -176,10 +183,7 @@ namespace ThinkInvisible.Dronemeld {
                 && self.summonerBodyObject
                 && self.summonerBodyObject.TryGetComponent<CharacterBody>(out var actiBody)
                 && actiBody.master) {
-                var extantDronesOfType = CharacterMaster.readOnlyInstancesList.Where(m =>
-                    (serverConfig.perPlayer ? (m.minionOwnership.ownerMaster == actiBody.master) : (m.teamIndex == actiBody.master.teamIndex))
-                    && m.gameObject.name.Replace("(Clone)", "") == self.masterPrefab.name);
-                var result = TryApply(extantDronesOfType);
+                var result = TryApply(actiBody.master, self.masterPrefab.name);
                 if(result) {
                     if(serverConfig.quantumWhitelist.Contains(result.gameObject.name.Replace("(Clone)", ""))) {
                         var qt = result.gameObject.AddComponent<DronemeldQuantumTurret>();
@@ -200,10 +204,7 @@ namespace ThinkInvisible.Dronemeld {
                 && directorSpawnRequest.summonerBodyObject
                 && directorSpawnRequest.summonerBodyObject.TryGetComponent<CharacterBody>(out var summonerBody)
                 && summonerBody.master) {
-                var extantDronesOfType = CharacterMaster.readOnlyInstancesList.Where(m =>
-                    (serverConfig.perPlayer ? (m.minionOwnership.ownerMaster == summonerBody.master) : (m.teamIndex == summonerBody.master.teamIndex))
-                    && m.gameObject.name.Replace("(Clone)", "") == directorSpawnRequest.spawnCard.prefab.name);
-                var result = TryApply(extantDronesOfType);
+                var result = TryApply(summonerBody.master, directorSpawnRequest.spawnCard.prefab.name);
                 if(result) {
                     if(serverConfig.quantumWhitelist.Contains(result.gameObject.name.Replace("(Clone)", ""))) {
                         var qt = result.gameObject.AddComponent<DronemeldQuantumTurret>();
