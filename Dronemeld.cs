@@ -286,9 +286,10 @@ namespace ThinkInvisible.Dronemeld {
 
         private void CharacterMaster_OnBodyStart(On.RoR2.CharacterMaster.orig_OnBodyStart orig, CharacterMaster self, CharacterBody body) {
             orig(self, body);
+            if(!self.inventory || !body.modelLocator || !body.modelLocator.modelTransform) return;
             var stacks = self.inventory.GetItemCount(stackItem);
             if(NetworkClient.active && body.modelLocator && clientConfig.vfxResize > 0f && stacks > 0) {
-                body.modelLocator.modelTransform.localScale += Vector3.one * clientConfig.vfxResize * self.inventory.GetItemCount(stackItem);
+                body.modelLocator.modelTransform.localScale += Vector3.one * clientConfig.vfxResize * stacks;
             }
         }
 
