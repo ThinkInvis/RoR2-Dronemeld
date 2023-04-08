@@ -20,7 +20,7 @@ namespace ThinkInvisible.Dronemeld {
     [BepInDependency(TILER2Plugin.ModGuid, TILER2Plugin.ModVer)]
     [NetworkCompatibility(CompatibilityLevel.EveryoneMustHaveMod, VersionStrictness.EveryoneNeedSameModVersion)]
     public class DronemeldPlugin:BaseUnityPlugin {
-        public const string ModVer = "1.3.0";
+        public const string ModVer = "1.3.1";
         public const string ModName = "Dronemeld";
         public const string ModGuid = "com.ThinkInvisible.Dronemeld";
 

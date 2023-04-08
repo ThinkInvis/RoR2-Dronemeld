@@ -37,6 +37,13 @@ Includes config options for (default value):
 
 The 5 latest updates are listed below. For a full changelog, see: https://github.com/ThinkInvis/RoR2-Dronemeld/blob/master/changelog.md
 
+**1.3.1**
+
+- Fixed a potential NRE when setting up on a CharacterMaster without an inventory.
+- Updated TILER2 dependency to 7.3.4.
+- Updated R2API dependency to 5.0.6 (now using split assembly).
+- Updated BepInEx dependency to 5.4.2103.
+
 **1.3.0**
 
 - Increased null safety of drone death hook.
