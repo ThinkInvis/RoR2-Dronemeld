@@ -20,7 +20,7 @@ namespace ThinkInvisible.Dronemeld {
     [BepInDependency(TILER2Plugin.ModGuid, TILER2Plugin.ModVer)]
     [NetworkCompatibility(CompatibilityLevel.EveryoneMustHaveMod, VersionStrictness.EveryoneNeedSameModVersion)]
     public class DronemeldPlugin:BaseUnityPlugin {
-        public const string ModVer = "1.3.1";
+        public const string ModVer = "1.3.2";
         public const string ModName = "Dronemeld";
         public const string ModGuid = "com.ThinkInvisible.Dronemeld";
 
@@ -303,13 +303,13 @@ namespace ThinkInvisible.Dronemeld {
             }
         }
 
-        private void SkillDef_OnFixedUpdate(On.RoR2.Skills.SkillDef.orig_OnFixedUpdate orig, RoR2.Skills.SkillDef self, GenericSkill skillSlot) {
+        private void SkillDef_OnFixedUpdate(On.RoR2.Skills.SkillDef.orig_OnFixedUpdate orig, RoR2.Skills.SkillDef self, GenericSkill skillSlot, float deltaTime) {
             if(skillSlot && skillSlot.characterBody && skillSlot.characterBody.master) {
                 var stacks = skillSlot.characterBody.master.inventory.GetItemCount(stackItem);
                 if(stacks > 0)
-                    skillSlot.RunRecharge(Time.fixedDeltaTime * stacks * serverConfig.statMultCDR);
+                    skillSlot.RunRecharge(deltaTime * stacks * serverConfig.statMultCDR);
             }
-            orig(self, skillSlot);
+            orig(self, skillSlot, deltaTime);
         }
 
         private void DeathState_OnImpactServer(On.EntityStates.Drone.DeathState.orig_OnImpactServer orig, EntityStates.Drone.DeathState self, Vector3 contactPoint) {

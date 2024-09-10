@@ -37,6 +37,12 @@ Includes config options for (default value):
 
 The 5 latest updates are listed below. For a full changelog, see: https://github.com/ThinkInvis/RoR2-Dronemeld/blob/master/changelog.md
 
+**1.3.2**
+
+- Fixes for Seekers of the Storm:
+	- Updated dependencies for new patch.
+	- Retargeted changed hook signatures (fixes errors preventing mod load).
+
 **1.3.1**
 
 - Fixed a potential NRE when setting up on a CharacterMaster without an inventory.
@@ -69,11 +75,3 @@ The 5 latest updates are listed below. For a full changelog, see: https://github
 - VfxResize client config option is now deferred until stage end.
 - Fixed slightly incorrect application of VfxResize option (will no longer offset Goobo Jr. into the ground instead of resizing, and will not also resize the HUD arrow).
 - Changed ally card stack count text from a hardcoded color to the "cStack" style.
-
-**1.0.0**
-
-- Initial version.
-	- Causes duplicate drone purchases to increase existing drones' stats instead of spawning a new one.
-	- Optionally also increases model size.
-	- Includes config for quantity before counting as duplicates, and upgrade order if this is > 1.
-	- Includes option for counting all drones per team instead of per player.

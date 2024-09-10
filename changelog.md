@@ -1,5 +1,11 @@
 ﻿# Dronemeld Changelog
 
+**1.3.2**
+
+- Fixes for Seekers of the Storm:
+	- Updated dependencies for new patch.
+	- Retargeted changed hook signatures (fixes errors preventing mod load).
+
 **1.3.1**
 
 - Fixed a potential NRE when setting up on a CharacterMaster without an inventory.
